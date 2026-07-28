@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ImageFix: analiza y renombra imágenes localmente." />
+    <title>ImageFix · Renombrado inteligente</title>
+    <link rel="icon" type="image/png" href="imagenes/ImageFix01.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+      defer
+    ></script>
+    <script type="module" src="js/app.js"></script>
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">✦</span>
+          <span>Image<span class="brand-accent">Fix</span></span>
+        </div>
+        <div class="privacy">
+          <span class="privacy-dot"></span>
+          100% local · tus archivos no salen del equipo
+        </div>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <p class="eyebrow">RENAME STUDIO <span>•</span> V1.0</p>
+            <h1>Ordena tu biblioteca<br /><span>de imágenes.</span></h1>
+            <p class="hero-copy">
+              Detecta nombres inconsistentes, previsualiza los cambios y descarga
+              una carpeta limpia en segundos.
+            </p>
+          </div>
+          <div class="hero-orbit">
+            <img
+              class="hero-logo-image"
+              src="imagenes/ImageFix.png"
+              alt="ImageFix — corrige, renombra y organiza"
+            />
+          </div>
+        </section>
+
+        <section
+          class="dropzone"
+          id="dropzone"
+          tabindex="0"
+          role="button"
+          aria-label="Seleccionar o arrastrar una carpeta"
+        >
+          <input
+            id="folderInput"
+            type="file"
+            webkitdirectory
+            directory
+            multiple
+            hidden
+          />
+          <div class="drop-icon">↥</div>
+          <h2>Arrastra una carpeta aquí</h2>
+          <p>o selecciona una carpeta desde tu equipo</p>
+          <button class="btn btn-primary" id="selectFolderBtn">
+            Seleccionar carpeta <span>⌘</span>
+          </button>
+          <small>JPG · JPEG · PNG · GIF · BMP · WEBP · TIFF · AVIF · JXL</small>
+        </section>
+
+        <section class="converter-section" id="converterSection">
+          <div class="section-heading converter-heading">
+            <div>
+              <p class="eyebrow">NUEVA HERRAMIENTA</p>
+              <h2>Conversor <span class="section-subtitle">JPG, WEBP, AVIF y más → PNG</span></h2>
+            </div>
+            <span class="converter-badge">● PROCESAMIENTO LOCAL</span>
+          </div>
+
+          <div class="converter-dropzone" id="converterDropzone" tabindex="0" role="button" aria-label="Cargar imágenes para convertir">
+            <input id="converterFilesInput" type="file" accept="image/*" multiple hidden />
+            <input id="converterFolderInput" type="file" accept="image/*" webkitdirectory directory multiple hidden />
+            <div class="converter-upload-icon">↥</div>
+            <h3>Arrastra imágenes o una carpeta aquí</h3>
+            <p>Convierte tus archivos a PNG sin salir de tu equipo.</p>
+            <div class="converter-select-actions">
+              <button class="btn btn-primary" id="converterSelectFilesBtn">Seleccionar imágenes</button>
+              <button class="btn btn-secondary" id="converterSelectFolderBtn">Seleccionar carpeta</button>
+            </div>
+            <small>Se conservan nombres, resolución y estructura de subcarpetas.</small>
+          </div>
+
+          <div class="converter-workspace hidden" id="converterWorkspace">
+            <div class="converter-toolbar">
+              <div class="converter-stat"><strong id="converterCount">0</strong><span>imágenes detectadas</span></div>
+              <div class="converter-formats"><span>Formatos:</span><strong id="converterFormats">—</strong></div>
+              <label class="converter-rule-option"><input id="converterApplyRules" type="checkbox" /><span></span> Aplicar reglas de nombres de ImageFix</label>
+            </div>
+            <div class="converter-file-list" id="converterFileList"></div>
+            <div class="converter-progress hidden" id="converterProgress">
+              <div class="progress-label"><span id="converterProgressLabel">Preparando...</span><span id="converterProgressPercent">0%</span></div>
+              <div class="progress-track"><div id="converterProgressBar"></div></div>
+            </div>
+            <div class="converter-status" id="converterStatus">Listo para convertir.</div>
+            <div class="converter-actions">
+              <button class="btn btn-ghost" id="converterClearBtn">Limpiar</button>
+              <button class="btn btn-primary" id="converterStartBtn">Convertir a PNG</button>
+              <button class="btn btn-primary hidden" id="converterDownloadBtn">↓ Descargar carpeta convertida</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace hidden" id="workspace">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">ANÁLISIS</p>
+              <h2 id="folderTitle">Carpeta seleccionada</h2>
+            </div>
+            <button class="btn btn-ghost" id="clearBtn">↺ Limpiar</button>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span class="stat-icon violet">◈</span>
+              <div><strong id="totalStat">0</strong><small>Total de imágenes</small></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon green">↗</span>
+              <div><strong id="renamedStat">0</strong><small>Renombradas</small></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon blue">✓</span>
+              <div><strong id="unchangedStat">0</strong><small>Sin cambios</small></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon amber">!</span>
+              <div><strong id="conflictStat">0</strong><small>Conflictos</small></div>
+            </article>
+            <article class="stat-card time-card">
+              <span class="stat-icon gray">◷</span>
+              <div><strong id="timeStat">—</strong><small>Tiempo de análisis</small></div>
+            </article>
+          </div>
+
+          <div class="toolbar">
+            <div class="search">
+              <span>⌕</span>
+              <input id="searchInput" type="search" placeholder="Buscar por nombre..." />
+            </div>
+            <label>
+              Ordenar por
+              <select id="sortSelect">
+                <option value="name">Nombre</option>
+                <option value="status">Estado</option>
+                <option value="type">Tipo de archivo</option>
+              </select>
+            </label>
+            <span class="result-count" id="resultCount">0 resultados</span>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Imagen</th>
+                  <th>Nombre original</th>
+                  <th>Nuevo nombre</th>
+                  <th>Acción</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+            <div class="empty-table hidden" id="emptyTable">
+              No hay resultados para esta búsqueda.
+            </div>
+          </div>
+
+          <div class="bottom-grid">
+            <section class="activity card">
+              <div class="card-title">
+                <h3>Actividad</h3>
+                <span class="live-badge">● EN VIVO</span>
+              </div>
+              <div id="activityLog" class="activity-log"></div>
+            </section>
+
+            <section class="tips card">
+              <div class="card-title"><h3>Reglas activas</h3><span>⌘</span></div>
+              <div class="rule">
+                <b>01</b>
+                <div><strong>Secuencia entre paréntesis</strong><small>2 (24).jpg → 2.jpg</small></div>
+                <label class="rule-switch"><input type="checkbox" data-rule-toggle="1" checked /><span></span></label>
+              </div>
+              <div class="rule">
+                <b>02</b>
+                <div><strong>Prefijo de cinco dígitos</strong><small>15990_1.jpg → 1.jpg</small></div>
+                <label class="rule-switch"><input type="checkbox" data-rule-toggle="2" checked /><span></span></label>
+              </div>
+              <div class="rule">
+                <b>03</b>
+                <div><strong>Numeración de tres dígitos</strong><small>001.jpg → 01.jpg</small></div>
+                <label class="rule-switch"><input type="checkbox" data-rule-toggle="3" checked /><span></span></label>
+              </div>
+              <div class="rule">
+                <b>04</b>
+                <div><strong>Reiniciar numeración desde 1</strong><small>48.jpg → 1.jpg</small></div>
+                <label class="rule-switch"><input type="checkbox" data-rule-toggle="4" checked /><span></span></label>
+              </div>
+              <div class="rule">
+                <b>05</b>
+                <div><strong>Regla 5</strong><small>0.jpg → 1.jpg</small></div>
+                <label class="rule-switch"><input type="checkbox" data-rule-toggle="5" checked /><span></span></label>
+              </div>
+              <p class="tip-note">Los conflictos se resuelven automáticamente sin sobrescribir archivos.</p>
+            </section>
+          </div>
+
+          <div class="progress-area hidden" id="progressArea">
+            <div class="progress-label">
+              <span id="progressLabel">Procesando...</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-track"><div id="progressBar"></div></div>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" id="analyzeBtn">↻ Analizar nuevamente</button>
+            <button class="btn btn-primary" id="downloadBtn" disabled>
+              ↓ Aplicar cambios y descargar ZIP
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>ImageFix · Hecho para trabajar en local</span>
+        <span>Atajo: <kbd>Ctrl</kbd> + <kbd>O</kbd> para seleccionar carpeta</span>
+      </footer>
+    </div>
+
+    <div class="modal-backdrop hidden" id="folderModal" role="presentation">
+      <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="folderModalTitle">
+        <button class="modal-close" id="folderModalCloseBtn" aria-label="Cerrar">×</button>
+        <div class="modal-icon">↥</div>
+        <p class="eyebrow">CARPETA DETECTADA</p>
+        <h2 id="folderModalTitle">¿Analizar esta carpeta?</h2>
+        <p class="modal-copy">Revisaremos los archivos localmente para preparar una vista previa de los cambios.</p>
+        <div class="folder-preview">
+          <span class="folder-preview-icon">▰</span>
+          <div>
+            <strong id="selectedFolderName">Carpeta seleccionada</strong>
+            <small id="selectedFolderImages">0 imágenes encontradas</small>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="folderModalCancelBtn">Elegir otra</button>
+          <button class="btn btn-primary" id="folderModalConfirmBtn">Analizar carpeta <span>→</span></button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop hidden" id="confirmModal" role="presentation">
+      <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <button class="modal-close" id="modalCloseBtn" aria-label="Cerrar">×</button>
+        <div class="modal-icon">↓</div>
+        <p class="eyebrow">ÚLTIMO PASO</p>
+        <h2 id="confirmTitle">¿Crear y descargar ZIP?</h2>
+        <p class="modal-copy">Se generará una copia local de tu carpeta con los nombres corregidos.</p>
+        <div class="confirm-summary">
+          <div><strong id="modalTotal">0</strong><span>Imágenes</span></div>
+          <div><strong id="modalRenamed">0</strong><span>Renombradas</span></div>
+          <div><strong id="modalUnchanged">0</strong><span>Sin cambios</span></div>
+          <div><strong id="modalConflicts">0</strong><span>Conflictos resueltos</span></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="modalCancelBtn">Cancelar</button>
+          <button class="btn btn-primary" id="modalConfirmBtn">Crear ZIP <span>↓</span></button>
+        </div>
+      </section>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+  </body>
+</html>
