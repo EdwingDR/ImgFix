@@ -14,7 +14,7 @@ export function applyParenthesisRule(base) {
 
 /** Regla 2: elimina cinco dígitos iniciales y el guion bajo. */
 export function applyPrefixRule(base) {
-  const match = base.match(/^\d{5}_(.+)$/);
+  const match = base.match(/^\d{4,5}_(.+)$/);
   return match ? { name: match[1], rule: 2 } : null;
 }
 
