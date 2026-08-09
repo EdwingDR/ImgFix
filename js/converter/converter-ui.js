@@ -78,10 +78,8 @@ function renderFileList() {
 async function startConversion() {
   if (!converterFiles.length) return;
   const startButton = $('converterStartBtn');
-  const downloadButton = $('converterDownloadBtn');
   const outputFormat = $('converterOutputFormat').value;
   startButton.disabled = true;
-  downloadButton.classList.add('hidden');
   $('converterProgress').classList.remove('hidden');
 
   try {
@@ -102,12 +100,9 @@ async function startConversion() {
     const zip = await createConvertedZip(converted, outputFolder, (progress) => {
       setProgress(progress, 'Generando ZIP...');
     });
-    downloadButton.classList.remove('hidden');
-    setStatus('Conversión completada correctamente.');
-    downloadButton.onclick = () => {
-      downloadConvertedZip(zip, `${outputFolder}.zip`);
-      clearConverter();
-    };
+    // La descarga comienza automáticamente cuando el ZIP termina de generarse.
+    downloadConvertedZip(zip, `${outputFolder}.zip`);
+    clearConverter();
   } catch (error) {
     setStatus(`Error al procesar un archivo: ${error.message}`, true);
   } finally {
