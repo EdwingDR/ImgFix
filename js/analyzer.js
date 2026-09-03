@@ -109,7 +109,7 @@ function buildResetNumberingPlan(files, enabledRules) {
 
   candidates.forEach((item, index) => {
     plan.set(item.file, {
-      name: `${index + 1}.${getExtension(item.file.name)}`,
+      name: `${String(index + 1).padStart(2, '0')}.${getExtension(item.file.name)}`,
       rule: RESET_NUMBERING_RULE_ID,
     });
   });
@@ -143,7 +143,7 @@ function buildZeroShiftPlan(files, enabledRules) {
 
   numericFiles.forEach(({ file, base }) => {
     plan.set(file, {
-      name: `${Number(base) + 1}.${getExtension(file.name)}`,
+      name: `${String(Number(base) + 1).padStart(2, '0')}.${getExtension(file.name)}`,
       rule: ZERO_SHIFT_RULE_ID,
     });
   });
@@ -195,6 +195,11 @@ function resetNumberingHasConflict(files, resetNumberingPlan, fourDigitZeroPlan,
 /** Punto de extensión para añadir reglas futuras sin cambiar el analizador. */
 export const renameRules = [applyParenthesisRule, applyPrefixRule];
 
+/** Normaliza únicamente los resultados numéricos a un mínimo de dos dígitos. */
+function formatNumericResult(name) {
+  return /^\d+$/.test(name) ? name.padStart(2, '0') : name;
+}
+
 /** Calcula el nombre propuesto por las reglas activas. */
 function proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules) {
   const fourDigitZeroResult = fourDigitZeroPlan.get(file);
@@ -216,7 +221,10 @@ function proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, re
     if (!isRuleEnabled(enabledRules, index + 1)) continue;
     const result = rule(base);
     if (result) {
-      return { name: `${result.name}.${extension}`, rule: result.rule };
+      return {
+        name: `${formatNumericResult(result.name)}.${extension}`,
+        rule: result.rule,
+      };
     }
   }
 

@@ -22,11 +22,19 @@
 
   <body>
     <div class="app-shell">
-      <header class="topbar">
+      <header class="topbar" id="inicio">
         <div class="brand">
           <span class="brand-mark">✦</span>
-          <span>Image<span class="brand-accent">Fix</span></span>
+          <a href="#inicio">Image<span class="brand-accent">Fix</span></a>
         </div>
+        <button class="nav-toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="siteNavigation" aria-label="Abrir menú">☰</button>
+        <nav class="site-navigation" id="siteNavigation" aria-label="Navegación principal">
+          <a href="#inicio">Inicio</a>
+          <a href="#dropzone">Herramientas</a>
+          <a href="#como-funciona">Cómo funciona</a>
+          <a href="#acerca">Acerca de</a>
+          <a class="github-link" href="https://github.com/EdwingDR/ImgFix.git" target="_blank" rel="noopener noreferrer">GitHub <span>↗</span></a>
+        </nav>
         <div class="privacy">
           <span class="privacy-dot"></span>
           100% local · Tus archivos no salen del equipo
@@ -231,12 +239,12 @@
               </div>
               <div class="rule">
                 <b>04</b>
-                <div><strong>Reiniciar numeración desde 1</strong><small>48.jpg → 1.jpg</small></div>
+                <div><strong>Reiniciar numeración desde 1</strong><small>48.jpg → 01.jpg</small></div>
                 <label class="rule-switch"><input type="checkbox" data-rule-toggle="4" checked /><span></span></label>
               </div>
               <div class="rule">
                 <b>05</b>
-                <div><strong>Regla 5</strong><small>0.jpg → 1.jpg</small></div>
+                <div><strong>Regla 5</strong><small>0.jpg → 01.jpg</small></div>
                 <label class="rule-switch"><input type="checkbox" data-rule-toggle="5" checked /><span></span></label>
               </div>
               <div class="rule">
@@ -273,11 +281,11 @@
         <div class="gallery-window" aria-hidden="true">
           <div class="gallery-track">
             <div class="gallery-set">
-              <img src="imagenes/ImageFix01.png" alt="" draggable="false" />
+              <img src="imagenes/ImageFix02.png" alt="" draggable="false" />
               <img src="imagenes/ImageFix.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix01.png" alt="" draggable="false" />
+              <img src="imagenes/ImageFix03.png" alt="" draggable="false" />
               <img src="imagenes/ImageFix.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix01.png" alt="" draggable="false" />
+              <img src="imagenes/ImageFix04.png" alt="" draggable="false" />
               <img src="imagenes/ImageFix.png" alt="" draggable="false" />
               <img src="imagenes/ImageFix01.png" alt="" draggable="false" />
               <img src="imagenes/ImageFix.png" alt="" draggable="false" />
@@ -294,6 +302,50 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <section class="info-section how-it-works" id="como-funciona">
+        <div class="info-heading">
+          <p class="eyebrow">GUÍA RÁPIDA</p>
+          <h2>Cómo funciona</h2>
+          <p>Un flujo sencillo para ordenar y transformar tus imágenes desde el navegador.</p>
+        </div>
+        <div class="steps-grid">
+          <article class="step-card">
+            <span class="step-number">01</span>
+            <span class="step-icon">↥</span>
+            <h3>Selecciona tus imágenes</h3>
+            <p>Elige una carpeta o selecciona las imágenes que quieres procesar.</p>
+          </article>
+          <article class="step-card">
+            <span class="step-number">02</span>
+            <span class="step-icon">⌕</span>
+            <h3>Analiza y configura</h3>
+            <p>ImageFix analiza los archivos y te permite configurar el renombrado o la conversión.</p>
+          </article>
+          <article class="step-card">
+            <span class="step-number">03</span>
+            <span class="step-icon">✦</span>
+            <h3>Procesa tus imágenes</h3>
+            <p>Revisa los cambios antes de aplicarlos y ejecuta el proceso.</p>
+          </article>
+          <article class="step-card">
+            <span class="step-number">04</span>
+            <span class="step-icon">↓</span>
+            <h3>Descarga el resultado</h3>
+            <p>Obtén tus imágenes procesadas en un archivo ZIP.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="info-section about-section" id="acerca">
+        <div class="about-copy">
+          <p class="eyebrow">SOBRE IMAGEFIX</p>
+          <h2>Acerca de ImgFix</h2>
+          <p>ImgFix es una herramienta web para analizar, renombrar y convertir imágenes de forma sencilla desde el navegador.</p>
+          <p>El procesamiento se realiza localmente en el equipo, por lo que los archivos seleccionados no necesitan ser enviados a un servidor.</p>
+        </div>
+        <div class="about-mark" aria-hidden="true">✦</div>
       </section>
 
       <footer>

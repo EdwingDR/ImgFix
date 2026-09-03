@@ -16,6 +16,11 @@ let folderName = 'ImageFix';
 let operation = 'rename';
 let outputFormat = 'jpg';
 
+/** Devuelve la vista al inicio cuando comienza un nuevo procesamiento. */
+function scrollToPageStart() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 /** Actualiza las opciones visibles según el tipo de procesamiento. */
 function updateOperationOptions() {
   let renameSelected = $('renameImagesOption').checked;
@@ -107,6 +112,7 @@ function resetImageFixSession() {
   analysis = null;
   ui.input.value = '';
   setWorkspaceVisible(false);
+  scrollToPageStart();
 }
 
 /** Ejecuta nuevamente el análisis de la carpeta seleccionada. */
@@ -192,6 +198,7 @@ async function loadFiles(files) {
     ui.input.value = '';
     return;
   }
+  scrollToPageStart();
   $('folderTitle').textContent = folderName;
   setWorkspaceVisible(true);
   ui.log(`Carpeta cargada correctamente: ${folderName}.`);
@@ -240,6 +247,21 @@ async function download() {
 
 /** Registra todos los eventos de la interfaz. */
 function registerEvents() {
+  const navToggle = $('navToggle');
+  const navigation = $('siteNavigation');
+  navToggle.addEventListener('click', () => {
+    const isOpen = navigation.classList.toggle('is-open');
+    navToggle.setAttribute('aria-expanded', String(isOpen));
+    navToggle.setAttribute('aria-label', isOpen ? 'Cerrar menú' : 'Abrir menú');
+  });
+  navigation.addEventListener('click', (event) => {
+    if (event.target.closest('a')) {
+      navigation.classList.remove('is-open');
+      navToggle.setAttribute('aria-expanded', 'false');
+      navToggle.setAttribute('aria-label', 'Abrir menú');
+    }
+  });
+
   $('selectFolderBtn').addEventListener('click', () => ui.input.click());
   $('selectImagesBtn').addEventListener('click', () => $('imageInput').click());
   ui.input.addEventListener('change', (event) => loadFiles(event.target.files));
