@@ -4,6 +4,8 @@ import { createZip, downloadBlob } from './zip.js';
 import { createUI } from './ui.js';
 import { formatDuration, getExtension, getFolderName, IMAGE_EXTENSIONS } from './utils.js';
 import { initializeConverter } from './converter/converter-ui.js';
+import { convertFiles } from './converter/image-converter.js';
+import { createConvertedZip } from './converter/zip-creator.js';
 
 const ui = createUI();
 const $ = (id) => document.getElementById(id);
@@ -11,6 +13,30 @@ const $ = (id) => document.getElementById(id);
 let selectedFiles = [];
 let analysis = null;
 let folderName = 'ImageFix';
+let operation = 'rename';
+let outputFormat = 'jpg';
+
+/** Actualiza las opciones visibles según el tipo de procesamiento. */
+function updateOperationOptions() {
+  let renameSelected = $('renameImagesOption').checked;
+  const convertSelected = $('convertImagesOption').checked;
+  if (!renameSelected && !convertSelected) {
+    $('renameImagesOption').checked = true;
+    renameSelected = true;
+  }
+  operation = renameSelected && convertSelected
+    ? 'both'
+    : convertSelected
+      ? 'convert'
+      : 'rename';
+  outputFormat = $('unifiedOutputFormat').value;
+  $('unifiedFormatControl').classList.toggle('hidden', !convertSelected);
+  $('downloadBtn').textContent = operation === 'rename'
+    ? '↓ Renombrar y descargar ZIP'
+    : operation === 'both'
+      ? '↓ Renombrar, convertir y descargar ZIP'
+      : '↓ Convertir y descargar ZIP';
+}
 
 /** Abre la confirmación visual de la carpeta seleccionada. */
 function requestFolderConfirmation(name, files) {
@@ -91,7 +117,7 @@ async function runAnalysis() {
   const outcome = await analyzeFiles(
     selectedFiles,
     (progress) => ui.setProgress(progress, 'Analizando imágenes...'),
-    { enabledRules: getEnabledRules() },
+    { enabledRules: operation === 'convert' ? new Set() : getEnabledRules() },
   );
   analysis = outcome;
 
@@ -101,6 +127,13 @@ async function runAnalysis() {
   }
 
   const summary = summarize(outcome.results);
+  if (operation !== 'rename') {
+    outcome.results.forEach((item) => {
+      const dot = item.newName.lastIndexOf('.');
+      item.newName = `${item.newName.slice(0, dot)}.${outputFormat}`;
+      item.action = 'Conversión';
+    });
+  }
   ui.stats(summary, formatDuration(outcome.duration));
   ui.renderResults(outcome.results);
   ui.filterRows($('searchInput').value, $('sortSelect').value);
@@ -128,6 +161,9 @@ async function runAnalysis() {
   }
   if (outcome.zeroShiftDetected) {
     ui.log(`Se detectó un archivo 0. Se desplazó la numeración en ${summary.ruleCounts[5]} imágenes.`);
+  }
+  if (outcome.fourDigitZeroDetected) {
+    ui.log(`Se corrigió la numeración de cuatro dígitos en ${summary.ruleCounts[6]} imágenes.`);
   }
   ui.toast('Análisis completado', true);
 }
@@ -172,16 +208,25 @@ async function download() {
 
   try {
     ui.setProgress(0, 'Aplicando cambios...');
-    await applyRenames(
-      analysis.results,
-      (progress) => ui.setProgress(progress, 'Aplicando cambios...'),
-    );
-    ui.setProgress(0, 'Generando ZIP...');
-    const blob = await createZip(
-      analysis.results,
-      folderName,
-      (progress) => ui.setProgress(progress, 'Generando ZIP...'),
-    );
+    let blob;
+    if (operation === 'rename') {
+      await applyRenames(analysis.results, (progress) => ui.setProgress(progress, 'Aplicando cambios...'));
+      ui.setProgress(0, 'Generando ZIP...');
+      blob = await createZip(analysis.results, folderName, (progress) => ui.setProgress(progress, 'Generando ZIP...'));
+    } else {
+      const nameMap = operation === 'both'
+        ? new Map(analysis.results.map((item) => [item.file, item.newName]))
+        : new Map();
+      const converted = await convertFiles(
+        selectedFiles,
+        nameMap,
+        outputFormat,
+        (progress, current, total) => ui.setProgress(progress, `Procesando imagen ${current} de ${total}`),
+      );
+      ui.setProgress(0, 'Generando ZIP...');
+      blob = await createConvertedZip(converted, folderName, (progress) => ui.setProgress(progress, 'Generando ZIP...'));
+    }
+    
     downloadBlob(blob, `${folderName}.zip`);
     ui.hideProgress();
     ui.log('ZIP generado correctamente.');
@@ -196,7 +241,12 @@ async function download() {
 /** Registra todos los eventos de la interfaz. */
 function registerEvents() {
   $('selectFolderBtn').addEventListener('click', () => ui.input.click());
+  $('selectImagesBtn').addEventListener('click', () => $('imageInput').click());
   ui.input.addEventListener('change', (event) => loadFiles(event.target.files));
+  $('imageInput').addEventListener('change', (event) => loadFiles(event.target.files));
+  $('renameImagesOption').addEventListener('change', updateOperationOptions);
+  $('convertImagesOption').addEventListener('change', updateOperationOptions);
+  $('unifiedOutputFormat').addEventListener('change', updateOperationOptions);
 
   ui.dropzone.addEventListener('dragover', (event) => {
     event.preventDefault();
@@ -233,6 +283,8 @@ function registerEvents() {
       ui.input.click();
     }
   });
+
+  updateOperationOptions();
 }
 
 registerEvents();

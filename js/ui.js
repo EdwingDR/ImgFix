@@ -72,7 +72,7 @@ export function createUI() {
         <td><img class="thumb" alt="" /></td>
         <td class="muted">${escapeHtml(item.original)}</td>
         <td class="new-name">${escapeHtml(item.newName)}</td>
-        <td class="action">${item.status === 'unchanged' ? '—' : item.rule ? `Regla ${item.rule}` : 'Colisión resuelta'}</td>
+        <td class="action">${item.action || (item.status === 'unchanged' ? '—' : item.rule ? `Regla ${item.rule}` : 'Colisión resuelta')}</td>
         <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
       `;
 

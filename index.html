@@ -29,7 +29,7 @@
         </div>
         <div class="privacy">
           <span class="privacy-dot"></span>
-          100% local · tus archivos no salen del equipo
+          100% local · Tus archivos no salen del equipo
         </div>
       </header>
 
@@ -67,12 +67,25 @@
             multiple
             hidden
           />
+          <input id="imageInput" type="file" accept="image/*" multiple hidden />
           <div class="drop-icon">↥</div>
           <h2>Arrastra una carpeta aquí</h2>
           <p>o selecciona una carpeta desde tu equipo</p>
-          <button class="btn btn-primary" id="selectFolderBtn">
-            Seleccionar carpeta <span>⌘</span>
-          </button>
+          <div class="unified-upload-actions">
+            <button class="btn btn-primary" id="selectFolderBtn">Seleccionar carpeta</button>
+            <button class="btn btn-secondary" id="selectImagesBtn">Seleccionar imágenes</button>
+          </div>
+          <div class="unified-operation-options">
+            <span>Qué quieres hacer</span>
+            <label class="operation-check"><input id="renameImagesOption" type="checkbox" checked /> <span>Renombrar imágenes</span></label>
+            <label class="operation-check"><input id="convertImagesOption" type="checkbox" /> <span>Convertir imágenes</span></label>
+            <label id="unifiedFormatControl">Convertir a
+              <select id="unifiedOutputFormat">
+                <option value="jpg" selected>JPG</option>
+                <option value="png">PNG</option>
+              </select>
+            </label>
+          </div>
           <small>JPG · JPEG · PNG · GIF · BMP · WEBP · TIFF · AVIF · JXL</small>
         </section>
 
@@ -226,6 +239,11 @@
                 <div><strong>Regla 5</strong><small>0.jpg → 1.jpg</small></div>
                 <label class="rule-switch"><input type="checkbox" data-rule-toggle="5" checked /><span></span></label>
               </div>
+              <div class="rule">
+                <b>06</b>
+                <div><strong>Numeración de cuatro dígitos</strong><small>0001.jpg → 01.jpg</small></div>
+                <label class="rule-switch"><input type="checkbox" data-rule-toggle="6" checked /><span></span></label>
+              </div>
               <p class="tip-note">Los conflictos se resuelven automáticamente sin sobrescribir archivos.</p>
             </section>
           </div>
@@ -241,7 +259,7 @@
           <div class="actions">
             <button class="btn btn-secondary" id="analyzeBtn">↻ Analizar nuevamente</button>
             <button class="btn btn-primary" id="downloadBtn" disabled>
-              ↓ Aplicar cambios y descargar ZIP
+              ↓ Procesar y descargar ZIP
             </button>
           </div>
         </section>

@@ -27,6 +27,9 @@ export const RESET_NUMBERING_RULE_ID = 4;
 /** Identificador de la regla que desplaza una secuencia que empieza en 0. */
 export const ZERO_SHIFT_RULE_ID = 5;
 
+/** Identificador de la regla para numeración de cuatro dígitos con cero. */
+export const FOUR_DIGIT_ZERO_RULE_ID = 6;
+
 /** Devuelve si una regla está activa en la configuración recibida. */
 function isRuleEnabled(enabledRules, ruleId) {
   return enabledRules instanceof Set
@@ -148,8 +151,26 @@ function buildZeroShiftPlan(files, enabledRules) {
   return plan;
 }
 
+/** Corrige nombres numéricos de cuatro dígitos que comienzan con cero. */
+function buildFourDigitZeroPlan(files, enabledRules) {
+  const plan = new Map();
+  if (!isRuleEnabled(enabledRules, FOUR_DIGIT_ZERO_RULE_ID)) return plan;
+
+  files.forEach((file) => {
+    const base = getBaseName(getFileName(file.name));
+    if (/^0\d{3}$/.test(base)) {
+      plan.set(file, {
+        name: `${String(Number(base)).padStart(2, '0')}.${getExtension(file.name)}`,
+        rule: FOUR_DIGIT_ZERO_RULE_ID,
+      });
+    }
+  });
+
+  return plan;
+}
+
 /** Detecta si un destino de la Regla 4 chocaría con otra imagen. */
-function resetNumberingHasConflict(files, resetNumberingPlan, zeroShiftPlan, threeDigitPlan, enabledRules) {
+function resetNumberingHasConflict(files, resetNumberingPlan, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, enabledRules) {
   const resetTargets = new Set();
   const resetSources = new Set([...resetNumberingPlan.keys()].map((file) =>
     getFileName(file.name).toLowerCase(),
@@ -163,7 +184,7 @@ function resetNumberingHasConflict(files, resetNumberingPlan, zeroShiftPlan, thr
 
   for (const file of files) {
     if (resetSources.has(getFileName(file.name).toLowerCase())) continue;
-    const otherTarget = proposedName(file, zeroShiftPlan, threeDigitPlan, new Map(), enabledRules)
+    const otherTarget = proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, new Map(), enabledRules)
       .name.toLowerCase();
     if (resetTargets.has(otherTarget)) return true;
   }
@@ -175,7 +196,10 @@ function resetNumberingHasConflict(files, resetNumberingPlan, zeroShiftPlan, thr
 export const renameRules = [applyParenthesisRule, applyPrefixRule];
 
 /** Calcula el nombre propuesto por las reglas activas. */
-function proposedName(file, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules) {
+function proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules) {
+  const fourDigitZeroResult = fourDigitZeroPlan.get(file);
+  if (fourDigitZeroResult) return fourDigitZeroResult;
+
   const zeroShiftResult = zeroShiftPlan.get(file);
   if (zeroShiftResult) return zeroShiftResult;
 
@@ -207,8 +231,9 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
   const results = [];
   const used = new Set();
   const started = performance.now();
-  const enabledRules = options.enabledRules || new Set([1, 2, THREE_DIGIT_RULE_ID]);
+  const enabledRules = options.enabledRules || new Set([1, 2, THREE_DIGIT_RULE_ID, RESET_NUMBERING_RULE_ID, ZERO_SHIFT_RULE_ID, FOUR_DIGIT_ZERO_RULE_ID]);
   const threeDigitPlan = buildThreeDigitPlan(files, enabledRules);
+  const fourDigitZeroPlan = buildFourDigitZeroPlan(files, enabledRules);
   const zeroShiftPlan = buildZeroShiftPlan(files, enabledRules);
   const paddedZeroSequenceActive = [...threeDigitPlan.keys()].some((file) => {
     const base = getBaseName(getFileName(file.name));
@@ -222,6 +247,7 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
   if (resetNumberingPlan.size && resetNumberingHasConflict(
     files,
     resetNumberingPlan,
+    fourDigitZeroPlan,
     zeroShiftPlan,
     threeDigitPlan,
     enabledRules,
@@ -232,7 +258,7 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
 
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index];
-    const proposed = proposedName(file, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules);
+    const proposed = proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules);
     const original = getFileName(file.name);
     const extension = getExtension(proposed.name);
     const base = getBaseName(proposed.name);
@@ -270,5 +296,6 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
     resetNumberingDetected: resetNumberingPlan.size > 0,
     resetNumberingAutoDisabled,
     zeroShiftDetected: zeroShiftPlan.size > 0,
+    fourDigitZeroDetected: fourDigitZeroPlan.size > 0,
   };
 }

@@ -10,7 +10,7 @@ export function summarize(results) {
     renamed: 0,
     unchanged: 0,
     conflict: 0,
-    ruleCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    ruleCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
   });
 }
 
