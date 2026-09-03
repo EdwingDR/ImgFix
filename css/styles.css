@@ -19,10 +19,29 @@
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background: radial-gradient(circle at 80% 0, #2b214b33, transparent 32%), var(--bg);
   color: var(--text);
   font-family: Inter, system-ui, sans-serif;
   font-size: 14px;
+}
+
+main > section {
+  animation: section-enter 0.55s ease both;
+}
+
+main > section:nth-child(2) { animation-delay: 0.08s; }
+main > section:nth-child(3) { animation-delay: 0.15s; }
+
+@keyframes section-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 button,
@@ -182,6 +201,15 @@ button {
   border-color: #b3a0ff;
   background: #33286833;
   transform: translateY(-2px);
+}
+
+.dropzone {
+  animation: panel-in 0.65s 0.1s ease both;
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .drop-icon {
@@ -540,6 +568,14 @@ button {
   border-radius: 12px;
   background: linear-gradient(145deg, #191b24, #14161d);
   box-shadow: var(--shadow);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card:hover,
+.card:hover {
+  border-color: #7666c688;
+  box-shadow: 0 20px 55px #0007;
+  transform: translateY(-2px);
 }
 
 .stat-card {
@@ -547,6 +583,17 @@ button {
   align-items: center;
   gap: 12px;
   padding: 17px 14px;
+  animation: card-in 0.45s ease both;
+}
+
+.stat-card:nth-child(2) { animation-delay: 0.05s; }
+.stat-card:nth-child(3) { animation-delay: 0.1s; }
+.stat-card:nth-child(4) { animation-delay: 0.15s; }
+.stat-card:nth-child(5) { animation-delay: 0.2s; }
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .stat-card strong {
@@ -653,6 +700,12 @@ td {
   padding: 13px 17px;
   border-top: 1px solid #242733;
   font-size: 12px;
+  animation: row-in 0.3s ease both;
+}
+
+@keyframes row-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 td:first-child { width: 44px; }
@@ -1021,6 +1074,88 @@ kbd {
   margin-top: 24px;
 }
 
+.image-gallery {
+  width: 100vw;
+  margin: 35px 0 0;
+  margin-left: calc(50% - 50vw);
+  padding: 24px 0 8px;
+  overflow: hidden;
+  border-top: 1px solid #ffffff0b;
+  border-bottom: 1px solid #ffffff0b;
+  background: linear-gradient(180deg, #10121a88, transparent);
+}
+
+.gallery-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  max-width: 1172px;
+  margin: 0 auto 14px;
+  padding: 0 34px;
+}
+
+.gallery-heading .eyebrow {
+  margin: 0;
+}
+
+.gallery-heading > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.gallery-window {
+  width: 100%;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+}
+
+.gallery-track {
+  display: flex;
+  width: max-content;
+  animation: gallery-scroll 34s linear infinite;
+  will-change: transform;
+}
+
+.gallery-set {
+  display: flex;
+  flex-shrink: 0;
+  gap: 14px;
+  padding-right: 14px;
+}
+
+.gallery-set img {
+  display: block;
+  width: 156px;
+  height: 94px;
+  border: 1px solid #ffffff15;
+  border-radius: 12px;
+  background: #10111a;
+  box-shadow: 0 10px 25px #0005;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes gallery-scroll {
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .gallery-track {
+    transform: translateX(0);
+  }
+}
+
 @media (max-width: 800px) {
   .app-shell { padding: 0 17px; }
   .hero { padding: 48px 8px 32px; }
@@ -1040,6 +1175,8 @@ kbd {
   .actions button { width: 100%; }
   .privacy { display: none; }
   footer { flex-direction: column; }
+  .gallery-heading { align-items: flex-start; flex-direction: column; gap: 5px; padding: 0 17px; }
+  .gallery-set img { width: 125px; height: 76px; }
   .converter-section { padding: 20px; }
   .converter-heading h2 { display: block; }
   .section-subtitle { display: block; margin-top: 6px; }
