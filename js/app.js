@@ -2,7 +2,7 @@ import { analyzeFiles } from './analyzer.js';
 import { applyRenames, summarize } from './renamer.js';
 import { createZip, downloadBlob } from './zip.js';
 import { createUI } from './ui.js';
-import { formatDuration, getExtension, getFolderName, IMAGE_EXTENSIONS } from './utils.js';
+import { formatDuration, getExtension, getFolderName, IMAGE_EXTENSIONS, toTitleCase } from './utils.js';
 import { initializeConverter } from './converter/converter-ui.js';
 import { convertFiles } from './converter/image-converter.js';
 import { createConvertedZip } from './converter/zip-creator.js';
@@ -219,7 +219,7 @@ async function download() {
     if (operation === 'rename') {
       await applyRenames(analysis.results, (progress) => ui.setProgress(progress, 'Aplicando cambios...'));
       ui.setProgress(0, 'Generando ZIP...');
-      blob = await createZip(analysis.results, folderName, (progress) => ui.setProgress(progress, 'Generando ZIP...'));
+      blob = await createZip(analysis.results, toTitleCase(folderName), (progress) => ui.setProgress(progress, 'Generando ZIP...'));
     } else {
       const nameMap = operation === 'both'
         ? new Map(analysis.results.map((item) => [item.file, item.newName]))
@@ -231,10 +231,11 @@ async function download() {
         (progress, current, total) => ui.setProgress(progress, `Procesando imagen ${current} de ${total}`),
       );
       ui.setProgress(0, 'Generando ZIP...');
-      blob = await createConvertedZip(converted, folderName, (progress) => ui.setProgress(progress, 'Generando ZIP...'));
+      blob = await createConvertedZip(converted, toTitleCase(folderName), (progress) => ui.setProgress(progress, 'Generando ZIP...'));
     }
     
-    downloadBlob(blob, `${folderName}.zip`);
+    const outputFolderName = toTitleCase(folderName);
+    downloadBlob(blob, `${outputFolderName}.zip`);
     ui.hideProgress();
     ui.log('ZIP generado correctamente.');
     resetImageFixSession();

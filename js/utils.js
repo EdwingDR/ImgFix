@@ -26,6 +26,13 @@ export function getFolderName(files) {
   return path.split('/')[0] || 'ImageFix';
 }
 
+/** Convierte cada palabra en mayúscula inicial para el nombre de salida. */
+export function toTitleCase(value) {
+  return String(value)
+    .toLocaleLowerCase('es')
+    .replace(/(^|[\s_-])(\p{L})/gu, (_, separator, letter) => `${separator}${letter.toLocaleUpperCase('es')}`);
+}
+
 /** Formatea una duración para mostrarla en la interfaz. */
 export function formatDuration(ms) {
   return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(2)} s`;
