@@ -37,10 +37,10 @@ function updateOperationOptions() {
   outputFormat = $('unifiedOutputFormat').value;
   $('unifiedFormatControl').classList.toggle('hidden', !convertSelected);
   $('downloadBtn').textContent = operation === 'rename'
-    ? '↓ Renombrar y Descargar ZIP'
+    ? '↓ Renombrar y descargar ZIP'
     : operation === 'both'
-      ? '↓ Renombrar, Convertir y Descargar ZIP'
-      : '↓ Convertir y Descargar ZIP';
+      ? '↓ Renombrar, convertir y descargar ZIP'
+      : '↓ Convertir y descargar ZIP';
 }
 
 /** Abre la confirmación visual de la carpeta seleccionada. */
