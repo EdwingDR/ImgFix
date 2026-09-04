@@ -43,6 +43,42 @@ function updateOperationOptions() {
       : '↓ Convertir y descargar ZIP';
 }
 
+/** Configura la vista ampliada de las imágenes de la pasarela. */
+function initializeGalleryPreview() {
+  const lightbox = $('galleryLightbox');
+  const lightboxImage = $('galleryLightboxImage');
+  const closeButton = $('galleryLightboxClose');
+  const close = () => {
+    lightbox.classList.add('hidden');
+    lightboxImage.removeAttribute('src');
+  };
+
+  document.querySelectorAll('.gallery-card').forEach((card) => {
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', 'Ampliar imagen decorativa');
+    card.addEventListener('click', () => {
+      const image = card.querySelector('img');
+      lightboxImage.src = image.currentSrc || image.src;
+      lightbox.classList.remove('hidden');
+    });
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        card.click();
+      }
+    });
+  });
+
+  closeButton.addEventListener('click', close);
+  lightbox.addEventListener('click', (event) => {
+    if (event.target === lightbox) close();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') close();
+  });
+}
+
 /** Abre la confirmación visual de la carpeta seleccionada. */
 function requestFolderConfirmation(name, files) {
   const modal = $('folderModal');
@@ -312,3 +348,4 @@ function registerEvents() {
 
 registerEvents();
 initializeConverter();
+initializeGalleryPreview();

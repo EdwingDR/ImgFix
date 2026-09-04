@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="ImageFix: analiza y renombra imágenes localmente." />
     <title>ImageFix · Renombrado Inteligente</title>
-    <link rel="icon" type="image/png" href="imagenes/ImageFix01.png" />
+    <link rel="icon" type="image/png" href="imagenes/ImageFix0.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"rel="stylesheet"/>
@@ -275,27 +275,27 @@
           <p class="eyebrow">IMAGEFIX STUDIO</p>
           <span>Herramientas para una biblioteca más ordenada</span>
         </div>
-        <div class="gallery-window" aria-hidden="true">
+        <div class="gallery-window">
           <div class="gallery-track">
             <div class="gallery-set">
-              <img src="imagenes/ImageFix02.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix03.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix04.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix01.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix.png" alt="" draggable="false" />
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix01.png')"><img src="imagenes/ImageFix01.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix02.png')"><img src="imagenes/ImageFix02.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix03.png')"><img src="imagenes/ImageFix03.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix04.png')"><img src="imagenes/ImageFix04.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix05.png')"><img src="imagenes/ImageFix05.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix06.png')"><img src="imagenes/ImageFix06.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix07.png')"><img src="imagenes/ImageFix07.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix08.png')"><img src="imagenes/ImageFix08.png" alt="" draggable="false" /></div>
             </div>
             <div class="gallery-set">
-              <img src="imagenes/ImageFix01.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix01.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix01.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix01.png" alt="" draggable="false" />
-              <img src="imagenes/ImageFix.png" alt="" draggable="false" />
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix01.png')"><img src="imagenes/ImageFix01.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix02.png')"><img src="imagenes/ImageFix02.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix03.png')"><img src="imagenes/ImageFix03.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix04.png')"><img src="imagenes/ImageFix04.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix05.png')"><img src="imagenes/ImageFix05.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix06.png')"><img src="imagenes/ImageFix06.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix07.png')"><img src="imagenes/ImageFix07.png" alt="" draggable="false" /></div>
+              <div class="gallery-card" style="--gallery-image: url('imagenes/ImageFix08.png')"><img src="imagenes/ImageFix08.png" alt="" draggable="false" /></div>
             </div>
           </div>
         </div>
@@ -392,5 +392,10 @@
       </section>
     </div>
     <div class="toast" id="toast" role="status"></div>
+
+    <div class="gallery-lightbox hidden" id="galleryLightbox" role="dialog" aria-modal="true" aria-label="Vista ampliada de imagen">
+      <button class="lightbox-close" id="galleryLightboxClose" type="button" aria-label="Cerrar vista ampliada">×</button>
+      <img id="galleryLightboxImage" src="" alt="Vista ampliada" />
+    </div>
   </body>
 </html>
