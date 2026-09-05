@@ -774,6 +774,40 @@ table {
   text-align: left;
 }
 
+/* La previsualización conserva sus filas y celdas; solo cambia su presentación. */
+.table-wrap table {
+  display: block;
+}
+
+.table-wrap thead {
+  display: none;
+}
+
+.table-wrap tbody {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px;
+}
+
+.table-wrap tbody tr {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #292c38;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #191b24, #14161d);
+  box-shadow: 0 10px 25px #0003;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.table-wrap tbody tr:hover {
+  border-color: #a68dff66;
+  box-shadow: 0 14px 30px #0006, 0 0 18px #9a7cff22;
+  transform: translateY(-2px);
+}
+
 th {
   padding: 13px 17px;
   background: #1b1e28;
@@ -785,7 +819,8 @@ th {
 }
 
 td {
-  padding: 13px 17px;
+  min-width: 0;
+  padding: 7px 12px;
   border-top: 1px solid #242733;
   font-size: 12px;
   animation: row-in 0.3s ease both;
@@ -796,17 +831,42 @@ td {
   to { opacity: 1; }
 }
 
-td:first-child { width: 44px; }
+td:first-child {
+  width: auto;
+  padding: 12px;
+  border-top: 0;
+  text-align: center;
+}
 
 .thumb {
-  width: 28px;
-  height: 28px;
+  display: block;
+  width: 100%;
+  height: 145px;
   border-radius: 6px;
   background: #292d3a;
-  object-fit: cover;
+  /* Muestra la imagen completa y evita el recorte que reducía su fidelidad visual. */
+  object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
+  cursor: zoom-in;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.thumb:hover,
+.thumb:focus-visible {
+  transform: scale(1.04);
+  box-shadow: 0 0 18px #9a7cff44;
 }
 
 .muted { color: var(--muted); }
+.muted,
+.new-name,
+.action {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .new-name { color: #eee; }
 .action { color: var(--accent); font-size: 11px; }
 
@@ -1462,8 +1522,8 @@ kbd {
   .toolbar { flex-wrap: wrap; }
   .toolbar label { margin-left: 0; }
   .search { width: 100%; }
-  table { min-width: 650px; }
-  .table-wrap { overflow-x: auto; }
+  .table-wrap tbody { gap: 8px; padding: 8px; }
+  .thumb { height: 105px; }
   .bottom-grid { grid-template-columns: 1fr; }
   .actions { flex-direction: column; }
   .actions button { width: 100%; }

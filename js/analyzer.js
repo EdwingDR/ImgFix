@@ -200,8 +200,45 @@ function formatNumericResult(name) {
   return /^\d+$/.test(name) ? name.padStart(2, '0') : name;
 }
 
+/**
+ * Crea el respaldo de renombrado usando exactamente el orden recibido.
+ * `analyzeFiles` no ordena los archivos: conserva el orden del FileList.
+ */
+function buildFallbackPlan(files) {
+  const plan = new Map();
+
+  files.forEach((file, index) => {
+    plan.set(file, {
+      name: `${String(index + 1).padStart(2, '0')}.${getExtension(file.name)}`,
+      rule: null,
+      fallback: true,
+    });
+  });
+
+  return plan;
+}
+
+/** Determina si alguna regla habilitada ya reconoce un patrón válido. */
+function hasApplicableRule(files, enabledRules, threeDigitPlan, fourDigitZeroPlan, zeroShiftPlan) {
+  const directRuleMatch = files.some((file) => {
+    const base = getBaseName(getFileName(file.name));
+    return renameRules.some((rule, index) =>
+      isRuleEnabled(enabledRules, index + 1) && Boolean(rule(base)),
+    );
+  });
+
+  const resetRuleMatch = isRuleEnabled(enabledRules, RESET_NUMBERING_RULE_ID)
+    && files.some((file) => /^\d+$/.test(getBaseName(getFileName(file.name))));
+
+  return directRuleMatch
+    || resetRuleMatch
+    || threeDigitPlan.size > 0
+    || fourDigitZeroPlan.size > 0
+    || zeroShiftPlan.size > 0;
+}
+
 /** Calcula el nombre propuesto por las reglas activas. */
-function proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules) {
+function proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules, fallbackPlan = new Map()) {
   const fourDigitZeroResult = fourDigitZeroPlan.get(file);
   if (fourDigitZeroResult) return fourDigitZeroResult;
 
@@ -228,6 +265,9 @@ function proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, re
     }
   }
 
+  const fallbackResult = fallbackPlan.get(file);
+  if (fallbackResult) return fallbackResult;
+
   return { name: getFileName(file.name), rule: null };
 }
 
@@ -243,6 +283,15 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
   const threeDigitPlan = buildThreeDigitPlan(files, enabledRules);
   const fourDigitZeroPlan = buildFourDigitZeroPlan(files, enabledRules);
   const zeroShiftPlan = buildZeroShiftPlan(files, enabledRules);
+  const fallbackPlan = options.enableFallback === false || hasApplicableRule(
+    files,
+    enabledRules,
+    threeDigitPlan,
+    fourDigitZeroPlan,
+    zeroShiftPlan,
+  )
+    ? new Map()
+    : buildFallbackPlan(files);
   const paddedZeroSequenceActive = [...threeDigitPlan.keys()].some((file) => {
     const base = getBaseName(getFileName(file.name));
     return base === '000' || /^\d{2}$/.test(base);
@@ -266,7 +315,7 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
 
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index];
-    const proposed = proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules);
+    const proposed = proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules, fallbackPlan);
     const original = getFileName(file.name);
     const extension = getExtension(proposed.name);
     const base = getBaseName(proposed.name);
@@ -286,6 +335,7 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
       original,
       newName: finalName,
       rule: proposed.rule,
+      fallback: Boolean(proposed.fallback),
       conflict,
       status: conflict ? 'conflict' : finalName === original ? 'unchanged' : 'renamed',
     });
@@ -305,5 +355,6 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
     resetNumberingAutoDisabled,
     zeroShiftDetected: zeroShiftPlan.size > 0,
     fourDigitZeroDetected: fourDigitZeroPlan.size > 0,
+    fallbackDetected: fallbackPlan.size > 0,
   };
 }

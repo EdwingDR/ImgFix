@@ -70,6 +70,14 @@ function initializeGalleryPreview() {
     });
   });
 
+  // Reutiliza el mismo lightbox para las miniaturas de la previsualización.
+  ui.body.addEventListener('click', (event) => {
+    const image = event.target.closest('.thumb');
+    if (!image?.src) return;
+    lightboxImage.src = image.src;
+    lightbox.classList.remove('hidden');
+  });
+
   closeButton.addEventListener('click', close);
   lightbox.addEventListener('click', (event) => {
     if (event.target === lightbox) close();
@@ -159,7 +167,10 @@ async function runAnalysis() {
   const outcome = await analyzeFiles(
     selectedFiles,
     (progress) => ui.setProgress(progress, 'Analizando imágenes...'),
-    { enabledRules: operation === 'convert' ? new Set() : getEnabledRules() },
+    {
+      enabledRules: operation === 'convert' ? new Set() : getEnabledRules(),
+      enableFallback: operation !== 'convert',
+    },
   );
   analysis = outcome;
 

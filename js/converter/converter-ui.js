@@ -87,6 +87,7 @@ async function startConversion() {
     if ($('converterApplyRules').checked) {
       const analysis = await analyzeFiles(converterFiles, () => {}, {
         enabledRules: new Set([1, 2, 3, 6]),
+        enableFallback: false,
       });
       nameMap = new Map(analysis.results.map((item) => [item.file, item.newName]));
     }
