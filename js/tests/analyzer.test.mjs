@@ -100,3 +100,92 @@ test('la conversión puede desactivar el fallback para conservar nombres', async
   assert.equal(outcome.results[0].newName, 'foto.jpg');
   assert.equal(outcome.fallbackDetected, false);
 });
+
+test('el fallback renombra nombres con guion bajo según el orden del FileList', async () => {
+  const outcome = await names(['01_01.jpg', '01_02.jpg', '01_03.jpg'], rules(1, 2, 3, 4, 5, 6));
+  assert.deepEqual(outcome.results.map((item) => item.newName), ['01.jpg', '02.jpg', '03.jpg']);
+  assert.equal(outcome.results.every((item) => item.rule === null && item.fallback), true);
+});
+
+test('el fallback no ordena alfabéticamente los nombres desordenados', async () => {
+  const inputOrder = ['zeta.png', '01_02.jpg', 'alfa.webp', 'foto-final.jpg'];
+  const outcome = await names(inputOrder, rules(1, 2, 3, 4, 5, 6));
+
+  assert.deepEqual(outcome.results.map((item) => item.original), inputOrder);
+  assert.deepEqual(outcome.results.map((item) => item.newName), [
+    '01.png', '02.jpg', '03.webp', '04.jpg',
+  ]);
+});
+
+test('el fallback conserva cada extensión cuando las imágenes están mezcladas', async () => {
+  const outcome = await names(['uno.gif', 'dos.avif', 'tres.tiff', 'cuatro.bmp'], rules());
+  assert.deepEqual(outcome.results.map((item) => item.newName), [
+    '01.gif', '02.avif', '03.tiff', '04.bmp',
+  ]);
+});
+
+test('el fallback mantiene nombres únicos aunque ya exista 01.jpg', async () => {
+  const outcome = await names(['imagen-nueva.jpg', '01.jpg', 'otra.jpg'], rules());
+  const outputNames = outcome.results.map((item) => item.newName);
+
+  assert.deepEqual(outputNames, ['01.jpg', '02.jpg', '03.jpg']);
+  assert.equal(new Set(outputNames).size, outputNames.length);
+  assert.equal(outcome.results.every((item) => item.conflict === false), true);
+});
+
+test('las colisiones de las reglas producen nombres alternativos consecutivos', async () => {
+  const outcome = await names(['2 (24).jpg', '2 (25).jpg', '2 (26).jpg'], rules(1));
+  assert.deepEqual(outcome.results.map((item) => item.newName), [
+    '02.jpg', '02 (1).jpg', '02 (2).jpg',
+  ]);
+  assert.deepEqual(outcome.results.map((item) => item.conflict), [false, true, true]);
+});
+
+test('varias reglas coexisten y se conserva la prioridad de los planes numéricos', async () => {
+  const outcome = await names([
+    '2 (24).jpg', // Regla 1.
+    '1590_2.png', // Regla 2.
+    '001.webp', // Regla 3.
+    '0001.gif', // Regla 6.
+  ], rules(1, 2, 3, 4, 6));
+
+  assert.deepEqual(outcome.results.map((item) => item.newName), [
+    '02.jpg', '02.png', '01.webp', '01.gif',
+  ]);
+  // La Regla 4 conserva su prioridad actual sobre la Regla 3.
+  assert.deepEqual(outcome.results.map((item) => item.rule), [1, 2, 4, 6]);
+  assert.equal(outcome.fallbackDetected, false);
+});
+
+test('desactivar una regla impide aplicarla y permite el fallback si no hay otra coincidencia', async () => {
+  const outcome = await names(['2 (24).jpg'], rules(2));
+  assert.equal(outcome.results[0].rule, null);
+  assert.equal(outcome.results[0].fallback, true);
+  assert.equal(outcome.results[0].newName, '01.jpg');
+  assert.equal(outcome.fallbackDetected, true);
+});
+
+test('estos nombres no activan reglas por patrones parciales', async () => {
+  const outcome = await names([
+    '01_01.jpg',
+    '01_02.jpg',
+    'foto.jpg',
+    'imagen-final.png',
+    'ABC.webp',
+  ], rules(1, 2, 3, 4, 5, 6));
+
+  assert.equal(outcome.results.every((item) => item.rule === null), true);
+  assert.equal(outcome.results.every((item) => item.fallback), true);
+});
+
+test('renombrar y convertir puede usar el fallback sin cambiar el orden', async () => {
+  const outcome = await names(['B.webp', 'A.png', 'C.jpg'], rules(1, 2, 3, 4, 5, 6));
+  const convertedNames = outcome.results.map((item) => {
+    const base = item.newName.slice(0, item.newName.lastIndexOf('.'));
+    return `${base}.jpg`;
+  });
+
+  assert.deepEqual(convertedNames, ['01.jpg', '02.jpg', '03.jpg']);
+  assert.deepEqual(outcome.results.map((item) => item.original), ['B.webp', 'A.png', 'C.jpg']);
+  assert.equal(outcome.fallbackDetected, true);
+});
