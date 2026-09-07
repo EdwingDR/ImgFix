@@ -5,6 +5,7 @@ import { analyzeFiles } from '../analyzer.js';
 
 const image = (name) => ({ name });
 const rules = (...ids) => new Set(ids);
+const allRules = () => rules(1, 2, 3, 4, 5, 6, 7);
 
 async function names(files, enabledRules, options = {}) {
   const outcome = await analyzeFiles(files.map(image), () => {}, {
@@ -188,4 +189,98 @@ test('renombrar y convertir puede usar el fallback sin cambiar el orden', async 
   assert.deepEqual(convertedNames, ['01.jpg', '02.jpg', '03.jpg']);
   assert.deepEqual(outcome.results.map((item) => item.original), ['B.webp', 'A.png', 'C.jpg']);
   assert.equal(outcome.fallbackDetected, true);
+});
+
+test('Regla 7 renumera una secuencia 0054-0057 según el orden del FileList', async () => {
+  const outcome = await names(['0056.jpg', '0054.jpg', '0057.jpg', '0055.jpg'], rules(7));
+  assert.deepEqual(outcome.results.map((item) => item.newName), [
+    '01.jpg', '02.jpg', '03.jpg', '04.jpg',
+  ]);
+  assert.deepEqual(outcome.results.map((item) => item.rule), [7, 7, 7, 7]);
+  assert.equal(outcome.fourDigitSequenceDetected, true);
+  assert.equal(outcome.fallbackDetected, false);
+});
+
+test('Regla 7 detecta correctamente el cambio de 0099 a 0100', async () => {
+  const outcome = await names(['0098.png', '0099.png', '0100.png', '0101.png'], rules(7));
+  assert.deepEqual(outcome.results.map((item) => item.newName), [
+    '01.png', '02.png', '03.png', '04.png',
+  ]);
+  assert.equal(outcome.results.every((item) => item.rule === 7), true);
+});
+
+test('Regla 7 conserva extensiones en una secuencia 0154-0156', async () => {
+  const outcome = await names(['0154.jpg', '0155.webp', '0156.png'], rules(7));
+  assert.deepEqual(outcome.results.map((item) => item.newName), [
+    '01.jpg', '02.webp', '03.png',
+  ]);
+});
+
+test('Regla 7 tiene prioridad sobre la Regla 6 cuando existe una secuencia', async () => {
+  const outcome = await names(['0001.jpg', '0002.jpg', '0003.jpg'], rules(6, 7));
+  assert.deepEqual(outcome.results.map((item) => item.newName), ['01.jpg', '02.jpg', '03.jpg']);
+  assert.equal(outcome.results.every((item) => item.rule === 7), true);
+});
+
+test('Regla 7 no se activa para un archivo aislado de cuatro dígitos', async () => {
+  const outcome = await names(['0054.jpg'], rules(7));
+  assert.equal(outcome.results[0].rule, null);
+  assert.equal(outcome.results[0].fallback, true);
+  assert.equal(outcome.fourDigitSequenceDetected, false);
+});
+
+test('la numeración duplicada 01, 01 (1), 02 debe continuar desde 01', async () => {
+  const inputOrder = ['01.jpg', '01 (1).jpg', '02.jpg'];
+  const outcome = await names(inputOrder, allRules());
+
+  assert.deepEqual(outcome.results.map((item) => item.newName), ['01.jpg', '02.jpg', '03.jpg']);
+  assert.deepEqual(outcome.results.map((item) => item.original), inputOrder);
+});
+
+test('la numeración duplicada con dos copias debe continuar sin colisiones', async () => {
+  const inputOrder = ['01.jpg', '01 (1).jpg', '01 (2).jpg', '02.jpg'];
+  const outcome = await names(inputOrder, allRules());
+
+  assert.deepEqual(outcome.results.map((item) => item.newName), ['01.jpg', '02.jpg', '03.jpg', '04.jpg']);
+  assert.deepEqual(outcome.results.map((item) => item.original), inputOrder);
+});
+
+test('la copia de 02 debe ocupar la posición siguiente respetando el FileList', async () => {
+  const inputOrder = ['01.jpg', '02.jpg', '02 (1).jpg', '03.jpg'];
+  const outcome = await names(inputOrder, allRules());
+
+  assert.deepEqual(outcome.results.map((item) => item.newName), ['01.jpg', '02.jpg', '03.jpg', '04.jpg']);
+  assert.deepEqual(outcome.results.map((item) => item.original), inputOrder);
+});
+
+test('las variantes duplicadas no deben activar una ordenación distinta al FileList', async () => {
+  const inputOrder = ['02.jpg', '01 (1).jpg', '01.jpg', '03.jpg'];
+  const outcome = await names(inputOrder, allRules());
+
+  assert.deepEqual(outcome.results.map((item) => item.original), inputOrder);
+  assert.deepEqual(outcome.results.map((item) => item.newName), ['01.jpg', '02.jpg', '03.jpg', '04.jpg']);
+});
+
+test('Regla 8 no interpreta 2 (24).jpg como duplicado de Windows', async () => {
+  const outcome = await names(['2 (24).jpg'], allRules());
+  assert.equal(outcome.windowsDuplicateDetected, false);
+  assert.equal(outcome.results[0].rule, 1);
+  assert.equal(outcome.results[0].newName, '02.jpg');
+});
+
+test('Regla 8 no se activa cuando faltan copias intermedias', async () => {
+  const outcome = await names(['01.jpg', '01 (2).jpg', '02.jpg'], allRules());
+  assert.equal(outcome.windowsDuplicateDetected, false);
+  assert.equal(outcome.results[1].rule, 1);
+});
+
+test('la conversión pura desactiva la Regla 8 y conserva los nombres', async () => {
+  const inputOrder = ['01.jpg', '01 (1).jpg', '02.jpg'];
+  const outcome = await names(inputOrder, rules(), {
+    enableFallback: false,
+    enableRule8: false,
+  });
+
+  assert.deepEqual(outcome.results.map((item) => item.newName), inputOrder);
+  assert.equal(outcome.windowsDuplicateDetected, false);
 });

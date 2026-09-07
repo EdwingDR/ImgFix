@@ -30,6 +30,12 @@ export const ZERO_SHIFT_RULE_ID = 5;
 /** Identificador de la regla para numeración de cuatro dígitos con cero. */
 export const FOUR_DIGIT_ZERO_RULE_ID = 6;
 
+/** Identificador de la regla para secuencias de cuatro dígitos con cero inicial. */
+export const FOUR_DIGIT_SEQUENCE_RULE_ID = 7;
+
+/** Identificador de la regla automática para duplicados creados por Windows. */
+export const WINDOWS_DUPLICATE_RULE_ID = 8;
+
 /** Devuelve si una regla está activa en la configuración recibida. */
 function isRuleEnabled(enabledRules, ruleId) {
   return enabledRules instanceof Set
@@ -169,8 +175,135 @@ function buildFourDigitZeroPlan(files, enabledRules) {
   return plan;
 }
 
+/**
+ * Renumera conjuntos consecutivos de cuatro dígitos con cero inicial.
+ * La detección usa el valor numérico, pero la asignación conserva el FileList.
+ */
+function buildFourDigitSequencePlan(files, enabledRules) {
+  const plan = new Map();
+  if (!isRuleEnabled(enabledRules, FOUR_DIGIT_SEQUENCE_RULE_ID)) return plan;
+
+  const candidates = files
+    .map((file) => ({ file, base: getBaseName(getFileName(file.name)) }))
+    .filter((item) => /^0\d{3}$/.test(item.base))
+    .sort((first, second) => Number(first.base) - Number(second.base));
+  const runs = [];
+  let currentRun = [];
+  let previousValue = null;
+
+  for (const candidate of candidates) {
+    const value = Number(candidate.base);
+    if (value === previousValue + 1) {
+      currentRun.push(candidate);
+    } else {
+      if (currentRun.length >= 2) runs.push(currentRun);
+      currentRun = [candidate];
+    }
+    previousValue = value;
+  }
+  if (currentRun.length >= 2) runs.push(currentRun);
+
+  for (const run of runs) {
+    const runFiles = new Set(run.map((item) => item.file));
+    let index = 1;
+    for (const file of files) {
+      if (!runFiles.has(file)) continue;
+      plan.set(file, {
+        name: `${String(index).padStart(2, '0')}.${getExtension(file.name)}`,
+        rule: FOUR_DIGIT_SEQUENCE_RULE_ID,
+      });
+      index += 1;
+    }
+  }
+
+  return plan;
+}
+
+/** Analiza un nombre exacto o un duplicado con sufijo de Windows. */
+function parseWindowsDuplicateBase(base) {
+  const exactMatch = base.match(/^(\d+)$/);
+  if (exactMatch) {
+    return { rawBase: exactMatch[1], value: Number(exactMatch[1]), copy: 0 };
+  }
+
+  const duplicateMatch = base.match(/^(\d+)\s+\((\d+)\)$/);
+  if (!duplicateMatch || Number(duplicateMatch[2]) < 1) return null;
+
+  return {
+    rawBase: duplicateMatch[1],
+    value: Number(duplicateMatch[1]),
+    copy: Number(duplicateMatch[2]),
+  };
+}
+
+/**
+ * Renumera grupos del tipo N, N (1), N (2) respetando el FileList.
+ * Solo se activa cuando las copias son consecutivas y las bases forman una
+ * secuencia numérica válida; los casos ambiguos siguen usando sus reglas normales.
+ */
+function buildWindowsDuplicatePlan(files, enabled) {
+  const plan = new Map();
+  if (enabled === false) return plan;
+
+  const parsedFiles = files
+    .map((file) => ({ file, parsed: parseWindowsDuplicateBase(getBaseName(getFileName(file.name))) }))
+    .filter((item) => item.parsed);
+  const groupsByBase = new Map();
+
+  for (const item of parsedFiles) {
+    const { rawBase, value } = item.parsed;
+    if (!groupsByBase.has(rawBase)) groupsByBase.set(rawBase, { rawBase, value, items: [] });
+    groupsByBase.get(rawBase).items.push(item);
+  }
+
+  const groups = [...groupsByBase.values()]
+    .map((group) => {
+      const copies = group.items.map((item) => item.parsed.copy).sort((a, b) => a - b);
+      const maxCopy = copies[copies.length - 1];
+      const validCopies = copies[0] === 0
+        && new Set(copies).size === copies.length
+        && copies.every((copy, index) => copy === index);
+      return {
+        ...group,
+        valid: validCopies,
+        hasDuplicate: maxCopy >= 1,
+      };
+    })
+    .filter((group) => group.valid)
+    .sort((first, second) => first.value - second.value);
+  const runs = [];
+  let currentRun = [];
+  let previousValue = null;
+
+  for (const group of groups) {
+    if (group.value === previousValue + 1) {
+      currentRun.push(group);
+    } else {
+      if (currentRun.length && currentRun.some((item) => item.hasDuplicate)) runs.push(currentRun);
+      currentRun = [group];
+    }
+    previousValue = group.value;
+  }
+  if (currentRun.length && currentRun.some((item) => item.hasDuplicate)) runs.push(currentRun);
+
+  for (const run of runs) {
+    const runFiles = new Set(run.flatMap((group) => group.items.map((item) => item.file)));
+    let index = 1;
+    for (const file of files) {
+      if (!runFiles.has(file)) continue;
+      plan.set(file, {
+        name: `${String(index).padStart(2, '0')}.${getExtension(file.name)}`,
+        rule: WINDOWS_DUPLICATE_RULE_ID,
+      });
+      index += 1;
+    }
+  }
+
+  return plan;
+}
+
 /** Detecta si un destino de la Regla 4 chocaría con otra imagen. */
-function resetNumberingHasConflict(files, resetNumberingPlan, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, enabledRules) {
+function resetNumberingHasConflict(files, resetNumberingPlan, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, enabledRules, fourDigitSequencePlan, windowsDuplicatePlan) {
   const resetTargets = new Set();
   const resetSources = new Set([...resetNumberingPlan.keys()].map((file) =>
     getFileName(file.name).toLowerCase(),
@@ -184,7 +317,7 @@ function resetNumberingHasConflict(files, resetNumberingPlan, fourDigitZeroPlan,
 
   for (const file of files) {
     if (resetSources.has(getFileName(file.name).toLowerCase())) continue;
-    const otherTarget = proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, new Map(), enabledRules)
+    const otherTarget = proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, new Map(), enabledRules, new Map(), fourDigitSequencePlan, windowsDuplicatePlan)
       .name.toLowerCase();
     if (resetTargets.has(otherTarget)) return true;
   }
@@ -219,7 +352,7 @@ function buildFallbackPlan(files) {
 }
 
 /** Determina si alguna regla habilitada ya reconoce un patrón válido. */
-function hasApplicableRule(files, enabledRules, threeDigitPlan, fourDigitZeroPlan, zeroShiftPlan) {
+function hasApplicableRule(files, enabledRules, threeDigitPlan, fourDigitZeroPlan, zeroShiftPlan, fourDigitSequencePlan, windowsDuplicatePlan) {
   const directRuleMatch = files.some((file) => {
     const base = getBaseName(getFileName(file.name));
     return renameRules.some((rule, index) =>
@@ -234,11 +367,19 @@ function hasApplicableRule(files, enabledRules, threeDigitPlan, fourDigitZeroPla
     || resetRuleMatch
     || threeDigitPlan.size > 0
     || fourDigitZeroPlan.size > 0
+    || fourDigitSequencePlan.size > 0
+    || windowsDuplicatePlan.size > 0
     || zeroShiftPlan.size > 0;
 }
 
 /** Calcula el nombre propuesto por las reglas activas. */
-function proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules, fallbackPlan = new Map()) {
+function proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules, fallbackPlan = new Map(), fourDigitSequencePlan = new Map(), windowsDuplicatePlan = new Map()) {
+  const windowsDuplicateResult = windowsDuplicatePlan.get(file);
+  if (windowsDuplicateResult) return windowsDuplicateResult;
+
+  const fourDigitSequenceResult = fourDigitSequencePlan.get(file);
+  if (fourDigitSequenceResult) return fourDigitSequenceResult;
+
   const fourDigitZeroResult = fourDigitZeroPlan.get(file);
   if (fourDigitZeroResult) return fourDigitZeroResult;
 
@@ -279,9 +420,11 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
   const results = [];
   const used = new Set();
   const started = performance.now();
-  const enabledRules = options.enabledRules || new Set([1, 2, THREE_DIGIT_RULE_ID, RESET_NUMBERING_RULE_ID, ZERO_SHIFT_RULE_ID, FOUR_DIGIT_ZERO_RULE_ID]);
+  const enabledRules = options.enabledRules || new Set([1, 2, THREE_DIGIT_RULE_ID, RESET_NUMBERING_RULE_ID, ZERO_SHIFT_RULE_ID, FOUR_DIGIT_ZERO_RULE_ID, FOUR_DIGIT_SEQUENCE_RULE_ID]);
   const threeDigitPlan = buildThreeDigitPlan(files, enabledRules);
   const fourDigitZeroPlan = buildFourDigitZeroPlan(files, enabledRules);
+  const fourDigitSequencePlan = buildFourDigitSequencePlan(files, enabledRules);
+  const windowsDuplicatePlan = buildWindowsDuplicatePlan(files, options.enableRule8 !== false);
   const zeroShiftPlan = buildZeroShiftPlan(files, enabledRules);
   const fallbackPlan = options.enableFallback === false || hasApplicableRule(
     files,
@@ -289,6 +432,8 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
     threeDigitPlan,
     fourDigitZeroPlan,
     zeroShiftPlan,
+    fourDigitSequencePlan,
+    windowsDuplicatePlan,
   )
     ? new Map()
     : buildFallbackPlan(files);
@@ -308,6 +453,8 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
     zeroShiftPlan,
     threeDigitPlan,
     enabledRules,
+    fourDigitSequencePlan,
+    windowsDuplicatePlan,
   )) {
     resetNumberingPlan = new Map();
     resetNumberingAutoDisabled = true;
@@ -315,7 +462,7 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
 
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index];
-    const proposed = proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules, fallbackPlan);
+    const proposed = proposedName(file, fourDigitZeroPlan, zeroShiftPlan, threeDigitPlan, resetNumberingPlan, enabledRules, fallbackPlan, fourDigitSequencePlan, windowsDuplicatePlan);
     const original = getFileName(file.name);
     const extension = getExtension(proposed.name);
     const base = getBaseName(proposed.name);
@@ -355,6 +502,8 @@ export async function analyzeFiles(fileList, onProgress = () => {}, options = {}
     resetNumberingAutoDisabled,
     zeroShiftDetected: zeroShiftPlan.size > 0,
     fourDigitZeroDetected: fourDigitZeroPlan.size > 0,
+    fourDigitSequenceDetected: fourDigitSequencePlan.size > 0,
+    windowsDuplicateDetected: windowsDuplicatePlan.size > 0,
     fallbackDetected: fallbackPlan.size > 0,
   };
 }

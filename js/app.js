@@ -163,6 +163,14 @@ function resetImageFixSession() {
 async function runAnalysis() {
   if (!selectedFiles.length) return;
 
+  const sequenceRuleToggle = document.querySelector('[data-rule-toggle="7"]');
+  if (sequenceRuleToggle) {
+    // Se mantiene habilitada durante el análisis para que el analizador pueda
+    // detectar la secuencia; después se refleja automáticamente su resultado.
+    sequenceRuleToggle.checked = true;
+    sequenceRuleToggle.disabled = true;
+  }
+
   ui.setProgress(0, 'Analizando imágenes...');
   const outcome = await analyzeFiles(
     selectedFiles,
@@ -170,6 +178,7 @@ async function runAnalysis() {
     {
       enabledRules: operation === 'convert' ? new Set() : getEnabledRules(),
       enableFallback: operation !== 'convert',
+      enableRule8: operation !== 'convert',
     },
   );
   analysis = outcome;
@@ -177,6 +186,11 @@ async function runAnalysis() {
   const resetRuleToggle = document.querySelector('[data-rule-toggle="4"]');
   if (resetRuleToggle && outcome.resetNumberingAutoDisabled) {
     resetRuleToggle.checked = false;
+  }
+
+  if (sequenceRuleToggle) {
+    sequenceRuleToggle.checked = outcome.fourDigitSequenceDetected;
+    sequenceRuleToggle.disabled = true;
   }
 
   const summary = summarize(outcome.results);
@@ -217,6 +231,12 @@ async function runAnalysis() {
   }
   if (outcome.fourDigitZeroDetected) {
     ui.log(`Se corrigió la numeración de cuatro dígitos en ${summary.ruleCounts[6]} imágenes.`);
+  }
+  if (outcome.fourDigitSequenceDetected) {
+    ui.log(`Se renumeró una secuencia de cuatro dígitos desde 01 en ${summary.ruleCounts[7]} imágenes.`);
+  }
+  if (outcome.windowsDuplicateDetected) {
+    ui.log(`Se renumeraron duplicados de Windows en ${summary.ruleCounts[8]} imágenes.`);
   }
   ui.toast('Análisis completado', true);
 }
